@@ -1,0 +1,10 @@
+### DotnetCore ###
+# .NET Core build folders
+bin/
+obj/
+
+*.DotSettings.user
+
+### Rider ###
+.idea
+*.sln.iml

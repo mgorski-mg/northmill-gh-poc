@@ -1,0 +1,124 @@
+name: Build and Test
+
+#concurrency: prod
+
+on: [ push, workflow_dispatch ]
+
+#permissions:
+#  id-token: write
+#  contents: read
+
+env:
+  AWS_REGION: eu-west-1
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    permissions:
+      checks: write
+      id-token: write
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Setup dotnet
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 6
+          dotnet-quality: ga
+      - name: Cache nuget packages  # todo fix key - it should probably only one cache always https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-net
+        uses: actions/cache@v3
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget
+      - name: Setup Amazon.Lambda.Tools
+        run: dotnet tool install -g Amazon.Lambda.Tools
+
+      - name: Install dependencies
+        run: dotnet restore
+      - name: Build
+        run: dotnet build --no-restore  # jak rozdzielić budowanie testowych projektów, bo sie sypie na Release --configuration Release
+      - name: Package
+        #        shell: pwsh
+        run: |
+          dotnet lambda package --configuration release --output-package ./deploy-package-sub.zip --project-location ./Clients.Infrastructure.Subscriber
+#          dotnet lambda package --configuration release --output-package ./deploy-package-app.zip --project-location ./Clients.Infrastructure.Api
+
+      - name: Test
+        run: dotnet test --no-build --verbosity normal --logger trx --results-directory "output/test" --filter Category!=E2E
+      - name: Test Report
+        uses: dorny/test-reporter@v1.6.0
+        if: always()
+        with:
+          name: test-report
+          path: output/test/*.trx
+          reporter: dotnet-trx
+      - name: Archive production artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: deploy-files
+          path: |
+            **/*.ps1
+            **/*.psm1
+            **/*.yaml
+            deploy-package-*.zip
+            !.github/**
+  
+  deploy-dev:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    needs: build-and-test
+    if: success() || failure()
+    environment: dev
+    concurrency: dev
+    steps:
+      - name: Download deploy scripts
+        uses: actions/download-artifact@v3
+        with:
+          name: deploy-files
+      - name: Set AWS credentials # https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services
+        # https://docs.github.com/en/actions/deployment/deploying-to-your-cloud-provider/deploying-to-amazon-elastic-container-service
+        uses: aws-actions/configure-aws-credentials@v1-node16
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - name: Setup Amazon.Lambda.Tools
+        run: dotnet tool install -g Amazon.Lambda.Tools
+      - name: Deploy cfn
+        shell: pwsh
+        run: ls
+      - name: Deploy cfn
+        shell: pwsh
+        run: ./Deploy/deploy.ps1 dev
+
+  deploy-stage:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    needs: [ build-and-test, deploy-dev ]
+    if: success()
+    environment: stage
+    concurrency: stage
+    steps:
+      - name: Download deploy scripts
+        uses: actions/download-artifact@v3
+        with:
+          name: deploy-files
+      - name: Set AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1-node16
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - name: Setup Amazon.Lambda.Tools
+        run: dotnet tool install -g Amazon.Lambda.Tools
+      - name: Deploy cfn
+        shell: pwsh
+        run: ls
+      - name: Deploy cfn
+        shell: pwsh
+        run: ./Deploy/deploy.ps1 stage

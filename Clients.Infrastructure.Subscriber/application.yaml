@@ -1,0 +1,66 @@
+﻿Transform: AWS::Serverless-2016-10-31
+
+Parameters:
+  EnvironmentType:
+    Type: String
+    AllowedValues:
+      - dev
+      - stage
+      - prod
+  EnvironmentName:
+    Type: String
+  ServiceName:
+    Type: String
+  ShortServiceName:
+    Type: String
+
+Resources:
+  ActivateProductLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-ActivateProductLambda
+      Handler: Clients.Infrastructure.Subscriber::Clients.Infrastructure.Subscriber.Functions.ActivateProductLambda::Run
+      Role: !GetAtt ActivateProductLambdaRole.Arn
+      Tags:
+        method-name: ActivateProductLambda
+        processing-plane: batch
+
+  ActivateProductLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - Fn::ImportValue: !Sub ${ShortServiceName}-config-${EnvironmentName}-appconfig-access-policy-arn
+      Policies:
+        - PolicyName: allowToAssumeInvocationRoles
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: sts:AssumeRole
+                Resource: "*"
+
+Globals:
+  Function:
+    Runtime: dotnet6
+    MemorySize: 1024
+    Timeout: 30
+    Description: !Ref AWS::StackName
+    Architectures:
+      - arm64
+    Layers:
+      - arn:aws:lambda:eu-west-1:434848589818:layer:AWS-AppConfig-Extension-Arm64:7
+    Environment:
+      Variables:
+        AppConfigAppId: !Sub ${ShortServiceName}-config-${EnvironmentName}
+        AppConfigEnvironmentId: default
+        AppConfigNormalConfigProfileId: normal-profile
+        AppConfigSensitiveConfigProfileId: sensitive-profile
+        ServiceName: !Ref ServiceName

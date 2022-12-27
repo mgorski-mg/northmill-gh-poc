@@ -1,0 +1,52 @@
+﻿AWSTemplateFormatVersion: 2010-09-09
+
+Parameters:
+  ServiceName:
+    Type: String
+
+Resources:
+  AppConfigApplication:
+    Type: AWS::AppConfig::Application
+    Properties:
+      Name: !Ref AWS::StackName
+
+  AppConfigEnvironment:
+    Type: AWS::AppConfig::Environment
+    Properties:
+      ApplicationId: !Ref AppConfigApplication
+      Name: default
+
+  AppConfigConfigurationProfile:
+    Type: AWS::AppConfig::ConfigurationProfile
+    Properties:
+      ApplicationId: !Ref AppConfigApplication
+      Name: normal-profile
+      LocationUri: hosted
+      Validators:
+        - Type: JSON_SCHEMA
+          Content: |
+            {
+              "$schema": "https://json-schema.org/draft/2020-12/schema",
+              "$id": "https://northmill.com/appConfig.schema.json",
+              "type": "object"
+            }
+
+  AllowToUseAppConfigPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      Description: AppConfig policy for Clients configuration stack
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - appconfig:StartConfigurationSession
+              - appconfig:GetLatestConfiguration
+            Resource: !Sub arn:aws:appconfig:${AWS::Region}:${AWS::AccountId}:application/${AppConfigApplication}/environment/${AppConfigEnvironment}/configuration/${AppConfigConfigurationProfile}
+
+Outputs:
+  AppConfigManagedPolicyArn:
+    Description: AllowToUseAppConfigPolicy
+    Value: !Ref AllowToUseAppConfigPolicy
+    Export:
+      Name: !Sub ${AWS::StackName}-appconfig-access-policy-arn
