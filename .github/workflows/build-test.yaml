@@ -32,10 +32,6 @@ jobs:
 
       - name: Install dependencies
         run: dotnet restore
-#      - name: Build
-#        run: dotnet build --no-restore  #todo: jak rozdzielić budowanie testowych projektów, bo sie sypie na Release --configuration Release
-      - name: Package
-        run: dotnet lambda package --configuration release --no-restore --output-package ./deploy-package-sub.zip --project-location ./Clients.Infrastructure.Subscriber
 
       - name: Test
         run: dotnet test --no-restore --logger trx --results-directory "output/test" --filter Category!=E2E
@@ -47,6 +43,8 @@ jobs:
           path: output/test/*.trx
           reporter: dotnet-trx
 
+      - name: Package
+        run: dotnet lambda package --configuration release --no-restore --output-package ./deploy-package-sub.zip --project-location ./Clients.Infrastructure.Subscriber
       - name: Create deploy artifact
         uses: actions/upload-artifact@v3
         with:
@@ -68,6 +66,7 @@ jobs:
     environment: dev
     concurrency: dev
     steps:
+#      - add tag with version
       - name: Download deploy artefact
         uses: actions/download-artifact@v3
         with:
