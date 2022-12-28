@@ -1,12 +1,6 @@
 name: Build and Test
 
-#concurrency: prod
-
 on: [ push, workflow_dispatch ]
-
-#permissions:
-#  id-token: write
-#  contents: read
 
 env:
   AWS_REGION: eu-west-1
@@ -39,12 +33,9 @@ jobs:
       - name: Install dependencies
         run: dotnet restore
       - name: Build
-        run: dotnet build --no-restore  # jak rozdzielić budowanie testowych projektów, bo sie sypie na Release --configuration Release
+        run: dotnet build --no-restore  #todo: jak rozdzielić budowanie testowych projektów, bo sie sypie na Release --configuration Release
       - name: Package
-        #        shell: pwsh
-        run: |
-          dotnet lambda package --configuration release --output-package ./deploy-package-sub.zip --project-location ./Clients.Infrastructure.Subscriber
-#          dotnet lambda package --configuration release --output-package ./deploy-package-app.zip --project-location ./Clients.Infrastructure.Api
+        run: dotnet lambda package --configuration release --output-package ./deploy-package-sub.zip --project-location ./Clients.Infrastructure.Subscriber
 
       - name: Test
         run: dotnet test --no-build --verbosity normal --logger trx --results-directory "output/test" --filter Category!=E2E
@@ -55,10 +46,11 @@ jobs:
           name: test-report
           path: output/test/*.trx
           reporter: dotnet-trx
-      - name: Archive production artifacts
+
+      - name: Create deploy artifact
         uses: actions/upload-artifact@v3
         with:
-          name: deploy-files
+          name: deploy-artefact
           path: |
             **/*.ps1
             **/*.psm1
@@ -72,14 +64,14 @@ jobs:
       id-token: write
       contents: read
     needs: build-and-test
-    if: success() || failure()
+    if: success()
     environment: dev
     concurrency: dev
     steps:
-      - name: Download deploy scripts
+      - name: Download deploy artefact
         uses: actions/download-artifact@v3
         with:
-          name: deploy-files
+          name: deploy-artefact
       - name: Set AWS credentials # https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services
         # https://docs.github.com/en/actions/deployment/deploying-to-your-cloud-provider/deploying-to-amazon-elastic-container-service
         uses: aws-actions/configure-aws-credentials@v1-node16
@@ -88,9 +80,6 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
       - name: Setup Amazon.Lambda.Tools
         run: dotnet tool install -g Amazon.Lambda.Tools
-      - name: Deploy cfn
-        shell: pwsh
-        run: ls
       - name: Deploy cfn
         shell: pwsh
         run: ./Deploy/deploy.ps1 dev
@@ -105,10 +94,10 @@ jobs:
     environment: stage
     concurrency: stage
     steps:
-      - name: Download deploy scripts
+      - name: Download deploy artefact
         uses: actions/download-artifact@v3
         with:
-          name: deploy-files
+          name: deploy-artefact
       - name: Set AWS credentials
         uses: aws-actions/configure-aws-credentials@v1-node16
         with:
@@ -116,9 +105,6 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
       - name: Setup Amazon.Lambda.Tools
         run: dotnet tool install -g Amazon.Lambda.Tools
-      - name: Deploy cfn
-        shell: pwsh
-        run: ls
       - name: Deploy cfn
         shell: pwsh
         run: ./Deploy/deploy.ps1 stage
