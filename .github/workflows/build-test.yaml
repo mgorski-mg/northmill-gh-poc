@@ -38,7 +38,7 @@ jobs:
         run: dotnet lambda package --configuration release --no-restore --output-package ./deploy-package-sub.zip --project-location ./Clients.Infrastructure.Subscriber
 
       - name: Test
-        run: dotnet test --no-build --verbosity normal --logger trx --results-directory "output/test" --filter Category!=E2E
+        run: dotnet test --no-restore --logger trx --results-directory "output/test" --filter Category!=E2E
       - name: Test Report
         uses: dorny/test-reporter@v1.6.0
         if: always()
