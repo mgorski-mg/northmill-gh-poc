@@ -20,11 +20,11 @@ jobs:
         with:
           dotnet-version: 6
           dotnet-quality: ga
-      - name: Cache nuget packages  # todo fix key - it should probably only one cache always https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-net
+      - name: Cache nuget packages  # https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-net
         uses: actions/cache@v3
         with:
           path: ~/.nuget/packages
-          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
+          key: ${{ runner.os }}-nuget
           restore-keys: |
             ${{ runner.os }}-nuget
       - name: Setup Amazon.Lambda.Tools
@@ -32,10 +32,10 @@ jobs:
 
       - name: Install dependencies
         run: dotnet restore
-      - name: Build
-        run: dotnet build --no-restore  #todo: jak rozdzielić budowanie testowych projektów, bo sie sypie na Release --configuration Release
+#      - name: Build
+#        run: dotnet build --no-restore  #todo: jak rozdzielić budowanie testowych projektów, bo sie sypie na Release --configuration Release
       - name: Package
-        run: dotnet lambda package --configuration release --output-package ./deploy-package-sub.zip --project-location ./Clients.Infrastructure.Subscriber
+        run: dotnet lambda package --configuration release --no-restore --output-package ./deploy-package-sub.zip --project-location ./Clients.Infrastructure.Subscriber
 
       - name: Test
         run: dotnet test --no-build --verbosity normal --logger trx --results-directory "output/test" --filter Category!=E2E
