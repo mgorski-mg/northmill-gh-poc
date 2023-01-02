@@ -1,0 +1,11 @@
+name: Build and Test V3
+
+on: [ push, workflow_dispatch ]
+
+env:
+  AWS_REGION: eu-west-1
+
+jobs:
+  call-workflow-in-another-repo:
+#    uses: octo-org/another-repo/.github/workflows/workflow.yml@v1
+    uses: mgorski-mg/northmill-gh-poc-actions/action-build-test/workflow.yaml@v2
