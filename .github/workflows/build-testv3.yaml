@@ -6,6 +6,6 @@ env:
   AWS_REGION: eu-west-1
 
 jobs:
-  call-workflow-in-another-repo:
+  build-and-test:
 #    uses: octo-org/another-repo/.github/workflows/workflow.yml@v1
     uses: mgorski-mg/northmill-gh-poc-actions/.github/workflows/build-test.yaml@v2
