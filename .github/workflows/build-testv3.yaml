@@ -11,5 +11,4 @@ jobs:
       checks: write
       id-token: write
       contents: write
-#    uses: octo-org/another-repo/.github/workflows/workflow.yml@v1
-    uses: mgorski-mg/northmill-gh-poc-actions/.github/workflows/build-test.yaml@v2
+    uses: mgorski-mg/northmill-gh-poc-actions/.github/workflows/build-test.yaml@main
