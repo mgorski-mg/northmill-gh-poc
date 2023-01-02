@@ -15,4 +15,4 @@ jobs:
     steps:
       - #id: build-and-test
 #        name: Build and Test
-        uses: mgorski-mg/northmill-gh-poc-actions@v1
+        uses: mgorski-mg/northmill-gh-poc-actions/action-build-test@v1
