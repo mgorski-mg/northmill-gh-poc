@@ -13,5 +13,6 @@ jobs:
       id-token: write
       contents: write
     steps:
-      - id: Build and Test
+      - #id: build-and-test
+#        name: Build and Test
         uses: mgorski-mg/northmill-gh-poc-actions@v1
