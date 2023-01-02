@@ -1,0 +1,17 @@
+name: Build and Test V2
+
+on: [ push, workflow_dispatch ]
+
+env:
+  AWS_REGION: eu-west-1
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    permissions:
+      checks: write
+      id-token: write
+      contents: write
+    steps:
+      - id: Build and Test
+        uses: mgorski-mg/northmill-gh-poc-actions@v1

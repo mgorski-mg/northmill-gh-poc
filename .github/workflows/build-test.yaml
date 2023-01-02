@@ -1,6 +1,7 @@
 name: Build and Test
 
-on: [ push, workflow_dispatch ]
+#on: [ push, workflow_dispatch ]
+on: workflow_dispatch
 
 env:
   AWS_REGION: eu-west-1
@@ -66,7 +67,7 @@ jobs:
     environment: dev
     concurrency: dev
     steps:
-#      - add tag with version
+      #      - add tag with version
       - name: Download deploy artefact
         uses: actions/download-artifact@v3
         with:
